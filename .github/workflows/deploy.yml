@@ -18,24 +18,23 @@ jobs:
             echo "📁 Masuk ke direktori proyek..."
             cd /var/www/futsaldev
             
-            echo "🔄 Mengkonfigurasi Git..."
+            echo "🔄 Konfigurasi Git safe.directory..."
             git config --global --add safe.directory /var/www/futsaldev
             
-            echo "🔄 Menarik update dari branch main..."
+            echo "🔄 Update kode dari branch main..."
             git fetch origin
             git reset --hard origin/main
             
-            echo "🧹 Menghentikan container lama..."
+            echo "🧹 Hentikan container lama..."
             docker compose down
             
-            echo "⚙️ Membangun dan menjalankan ulang container..."
+            echo "⚙ Bangun dan jalankan container baru..."
             docker compose up -d --build
             
-            echo "⏳ Menunggu MySQL siap..."
+            echo "⏳ Tunggu MySQL siap..."
             docker exec laravel-app sh -c '
               max_tries=30
               counter=0
-              echo "Menunggu database siap..."
               until php -r "
                 try {
                   \$pdo = new PDO(
@@ -43,10 +42,8 @@ jobs:
                     \"root\",
                     \"root\"
                   );
-                  echo \"Database connection successful\\n\";
                   exit(0);
                 } catch (PDOException \$e) {
-                  echo \"Database connection failed: \" . \$e->getMessage() . \"\\n\";
                   exit(1);
                 }
               " || [ $counter -eq $max_tries ]; do
@@ -54,24 +51,27 @@ jobs:
                 sleep 2
                 counter=$((counter+1))
               done
-              
               if [ $counter -eq $max_tries ]; then
-                echo "❌ Timeout menunggu database setelah $((max_tries * 2)) detik"
+                echo "❌ Timeout menunggu database"
                 exit 1
               fi
             '
             
-            echo "📦 Menjalankan composer install..."
+            echo "⚙ Atur permission storage dan bootstrap/cache..."
+            docker exec laravel-app chown -R www-data:www-data storage bootstrap/cache
+            docker exec laravel-app chmod -R 775 storage bootstrap/cache
+            
+            echo "📦 Jalankan composer install..."
             docker exec -u www-data laravel-app composer install --no-interaction --prefer-dist --optimize-autoloader
             
             echo "🔐 Generate APP key..."
             docker exec -u www-data laravel-app php artisan key:generate --force
             
-            echo "🧹 Membersihkan cache..."
+            echo "🧹 Bersihkan cache aplikasi..."
             docker exec -u www-data laravel-app php artisan config:clear
             docker exec -u www-data laravel-app php artisan cache:clear
             
-            echo "🗃️ Reset dan migrasi database..."
+            echo "🗃 Migrasi dan seed database..."
             docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
             
             echo "✅ Deploy selesai!"
