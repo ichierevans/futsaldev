@@ -1,0 +1,141 @@
+/* Dual Scroll Container Styles */
+.dual-scroll-container {
+    display: flex;
+    width: 100%;
+    min-height: 500px; /* Minimum height */
+    max-height: 700px; /* Maximum height */
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    margin-top: 20px; /* Add margin to prevent overlap */
+    position: relative; /* Ensure proper stacking */
+    z-index: 10; /* Ensure it's above other elements */
+}
+
+.vertical-scroll-container {
+    width: 250px; /* Fixed width for vertical scroll */
+    border-right: 1px solid #e0e0e0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #28a745 #f1f1f1;
+    background-color: #f9f9f9;
+}
+
+.vertical-scroll-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.vertical-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.vertical-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #28a745;
+    border-radius: 10px;
+}
+
+.horizontal-scroll-container {
+    flex: 1;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #28a745 transparent;
+    padding: 15px;
+    gap: 20px;
+    align-items: stretch;
+    background-color: white;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.horizontal-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #28a745;
+    border-radius: 10px;
+}
+
+.scroll-card {
+    flex: 0 0 auto;
+    width: 300px;
+    min-width: 300px;
+    max-width: 300px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-right: 20px;
+    transition: transform 0.3s ease;
+    scroll-snap-align: center;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #e0e0e0;
+}
+
+.scroll-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.vertical-item {
+    padding: 15px;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vertical-item:hover {
+    background-color: #f0f0f0;
+}
+
+.vertical-item.active {
+    background-color: #28a745;
+    color: white;
+}
+
+.vertical-item-count {
+    background-color: rgba(255,255,255,0.2);
+    color: inherit;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .dual-scroll-container {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+    }
+
+    .vertical-scroll-container {
+        width: 100%;
+        max-height: 250px;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .horizontal-scroll-container {
+        padding: 10px;
+        gap: 15px;
+    }
+
+    .scroll-card {
+        width: 250px;
+        min-width: 250px;
+        max-width: 250px;
+    }
+} 

@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  # Service Aplikasi Laravel
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: laravel_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "8083:80"
+    volumes:
+      - ./:/var/www/html
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=database
+      - DB_PORT=3306
+      - SESSION_DRIVER=file
+      - DB_DATABASE=futsal6
+      - DB_USERNAME=root
+      - DB_PASSWORD=password123
+    networks:
+      - laravel_network
+
+networks:
+  laravel_network:
+    name: laravel_network
+    driver: bridge

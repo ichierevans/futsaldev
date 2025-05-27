@@ -1,0 +1,101 @@
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: url('../image/bg1.jpg') no-repeat center center fixed;
+    background-size: cover;
+    height: 100vh; /* Add this to ensure full height */
+    display: flex; /* Add this */
+    flex-direction: column; /* Add this */
+}
+
+.navbar {
+    background-color: #fff;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 4px solid #4CAF50;
+}
+
+.navbar .brand {
+    font-weight: bold;
+    font-size: 24px;
+}
+
+.form-container {
+    max-width: 500px;
+    width: 90%; /* Add this for better responsiveness */
+    margin: auto; /* Changed from '60px auto' to just 'auto' */
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: #fff;
+    backdrop-filter: blur(10px);
+    border: 2px solid #fff;
+    /* Add positioning to center vertically */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #fff;
+    padding: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.row {
+    display: flex;
+    gap: 15px;
+}
+
+.row .form-group {
+    flex: 1;
+}
+
+.btn {
+    background: white;
+    color: green;
+    font-weight: bold;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    width: 100%;
+    border-radius: 5px;
+}
+
+.footer-text {
+    text-align: center;
+    margin-top: 15px;
+    color: #fff;
+}
+
+.footer-text a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.btn-back {
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+}
