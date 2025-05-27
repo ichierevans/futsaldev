@@ -2,76 +2,100 @@ name: Deploy Laravel ke VPS
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # Trigger workflow ketika ada push ke branch 'main'
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Menggunakan runner GitHub Actions terbaru
+
     steps:
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@master # Menggunakan action SSH untuk koneksi ke VPS
         with:
-          host: ${{ secrets.VPS_IP }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
+          host: ${{ secrets.VPS_IP }} # IP VPS dari GitHub Secrets
+          username: ${{ secrets.VPS_USER }} # Username SSH VPS dari GitHub Secrets
+          key: ${{ secrets.VPS_SSH_KEY }} # SSH Private Key VPS dari GitHub Secrets
           script: |
             echo "📁 Masuk ke direktori proyek..."
+            # Masuk ke direktori proyek Laravel di VPS
             cd /var/www/futsaldev
             
             echo "🔄 Konfigurasi Git safe.directory..."
+            # Menambahkan direktori proyek ke daftar aman Git untuk menghindari error ownership
             git config --global --add safe.directory /var/www/futsaldev
             
             echo "🔄 Update kode dari branch main..."
+            # Mengambil perubahan terbaru dari remote origin
             git fetch origin
+            # Mereset branch lokal ke kondisi terbaru dari branch main di remote
             git reset --hard origin/main
             
             echo "🧹 Hentikan container lama..."
+            # Menghentikan dan menghapus container Docker yang sedang berjalan
             docker compose down
             
             echo "⚙ Bangun dan jalankan container baru..."
+            # Membangun ulang image Docker (jika ada perubahan pada Dockerfile) dan menjalankan container
             docker compose up -d --build
             
             echo "⏳ Tunggu MySQL siap..."
+            # Menunggu hingga container MySQL siap menerima koneksi
             docker exec laravel-app sh -c '
-              max_tries=30
-              counter=0
+              max_tries=30 # Jumlah percobaan maksimal
+              counter=0    # Penghitung percobaan
               until php -r "
                 try {
+                  # Mencoba koneksi PDO ke database MySQL
                   \$pdo = new PDO(
                     \"mysql:host=db;port=3306;dbname=futsal6\",
                     \"root\",
                     \"root\"
                   );
-                  exit(0);
+                  exit(0); # Jika berhasil, keluar dengan kode 0
                 } catch (PDOException \$e) {
-                  exit(1);
+                  exit(1); # Jika gagal, keluar dengan kode 1
                 }
               " || [ $counter -eq $max_tries ]; do
                 echo "Mencoba koneksi ke database... ($counter/$max_tries)"
-                sleep 2
+                sleep 2 # Tunggu 2 detik sebelum mencoba lagi
                 counter=$((counter+1))
               done
               if [ $counter -eq $max_tries ]; then
                 echo "❌ Timeout menunggu database"
-                exit 1
+                exit 1 # Gagal jika timeout
               fi
             '
             
             echo "⚙ Atur permission storage dan bootstrap/cache..."
+            # Mengatur kepemilikan dan izin direktori storage dan bootstrap/cache di dalam container
+            # Ini penting agar Laravel bisa menulis log, cache, dll.
             docker exec laravel-app chown -R www-data:www-data storage bootstrap/cache
             docker exec laravel-app chmod -R 775 storage bootstrap/cache
             
             echo "📦 Jalankan composer install..."
+            # Menjalankan composer install di dalam container sebagai user www-data
+            # --no-interaction: Tidak meminta input pengguna
+            # --prefer-dist: Mengunduh dari distribusi, lebih cepat
+            # --optimize-autoloader: Mengoptimalkan autoloader untuk produksi
             docker exec -u www-data laravel-app composer install --no-interaction --prefer-dist --optimize-autoloader
             
             echo "🔐 Generate APP key..."
+            # Menghasilkan kunci aplikasi Laravel di dalam container
+            # --force: Memaksa generate kunci tanpa konfirmasi (penting untuk CI/CD)
             docker exec -u www-data laravel-app php artisan key:generate --force
             
             echo "🧹 Bersihkan cache aplikasi..."
+            # Membersihkan cache konfigurasi dan aplikasi Laravel di dalam container
             docker exec -u www-data laravel-app php artisan config:clear
             docker exec -u www-data laravel-app php artisan cache:clear
             
             echo "🗃 Migrasi dan seed database..."
-            docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
+            # Menjalankan migrasi database di dalam container
+            # PENTING: migrate:fresh akan MENGHAPUS SEMUA DATA di database Anda.
+            # Untuk produksi, biasanya Anda hanya ingin 'php artisan migrate --force'
+            # yang hanya menjalankan migrasi yang belum dijalankan.
+            docker exec -u www-data laravel-app php artisan migrate --force --seed
+            # Jika Anda memang ingin menghapus semua data dan me-reset database setiap kali deploy:
+            # docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
             
             echo "✅ Deploy selesai!"
