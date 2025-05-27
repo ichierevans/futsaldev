@@ -39,7 +39,7 @@ jobs:
               until php -r "
                 try {
                   \$pdo = new PDO(
-                    \"mysql:host=db;port=3306;dbname=jemberwonder\",
+                    \"mysql:host=db;port=3306;dbname=futsal6\",
                     \"root\",
                     \"root\"
                   );
