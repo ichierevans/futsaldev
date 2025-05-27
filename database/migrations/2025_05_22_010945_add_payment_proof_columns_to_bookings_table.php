@@ -12,8 +12,15 @@ class AddPaymentProofColumnsToBookingsTable extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->string('payment_proof_path')->nullable();
-            $table->string('payment_proof_filename')->nullable();
+            // Tambahkan payment_proof_path hanya jika belum ada
+            if (!Schema::hasColumn('bookings', 'payment_proof_path')) {
+                $table->string('payment_proof_path')->nullable();
+            }
+
+            // Tambahkan payment_proof_filename hanya jika belum ada
+            if (!Schema::hasColumn('bookings', 'payment_proof_filename')) {
+                $table->string('payment_proof_filename')->nullable();
+            }
         });
     }
 
@@ -23,7 +30,13 @@ class AddPaymentProofColumnsToBookingsTable extends Migration
     public function down(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->dropColumn(['payment_proof_path', 'payment_proof_filename']);
+            // Hapus kolom hanya jika ada
+            if (Schema::hasColumn('bookings', 'payment_proof_path')) {
+                $table->dropColumn('payment_proof_path');
+            }
+            if (Schema::hasColumn('bookings', 'payment_proof_filename')) {
+                $table->dropColumn('payment_proof_filename');
+            }
         });
     }
 }

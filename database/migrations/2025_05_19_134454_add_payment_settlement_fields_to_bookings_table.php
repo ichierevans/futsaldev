@@ -17,7 +17,6 @@ return new class extends Migration
             Schema::table('bookings', function (Blueprint $table) {
                 $table->enum('payment_status', ['pending', 'partial', 'completed'])
                     ->default('pending')
-                    ->after('status')
                     ->nullable();
             });
         }
@@ -29,16 +28,20 @@ return new class extends Migration
 
         // Add DP (Down Payment) amount column if not exists
         if (!Schema::hasColumn('bookings', 'dp_amount')) {
-            $table->decimal('dp_amount', 10, 2)
-                ->nullable()
-                ->default(0);
+            Schema::table('bookings', function (Blueprint $table) {
+                $table->decimal('dp_amount', 10, 2)
+                    ->nullable()
+                    ->default(0);
+            });
         }
         
         // Add remaining amount column if not exists
         if (!Schema::hasColumn('bookings', 'remaining_amount')) {
-            $table->decimal('remaining_amount', 10, 2)
-                ->nullable()
-                ->default(0);
+            Schema::table('bookings', function (Blueprint $table) {
+                $table->decimal('remaining_amount', 10, 2)
+                    ->nullable()
+                    ->default(0);
+            });
         }
     }
 
@@ -47,16 +50,17 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (Schema::hasColumn('bookings', 'payment_status')) {
-            Schema::table('bookings', function (Blueprint $table) {
+        Schema::table('bookings', function (Blueprint $table) {
+            // Hapus kolom hanya jika ada
+            if (Schema::hasColumn('bookings', 'payment_status')) {
                 $table->dropColumn('payment_status');
-            });
-        }
-        if (Schema::hasColumn('bookings', 'dp_amount')) {
-            $table->dropColumn('dp_amount');
-        }
-        if (Schema::hasColumn('bookings', 'remaining_amount')) {
-            $table->dropColumn('remaining_amount');
-        }
+            }
+            if (Schema::hasColumn('bookings', 'dp_amount')) {
+                $table->dropColumn('dp_amount');
+            }
+            if (Schema::hasColumn('bookings', 'remaining_amount')) {
+                $table->dropColumn('remaining_amount');
+            }
+        });
     }
 };
