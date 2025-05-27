@@ -1,0 +1,77 @@
+name: Deploy Laravel ke VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            echo "📁 Masuk ke direktori proyek..."
+            cd /var/www/devops
+            
+            echo "🔄 Mengkonfigurasi Git..."
+            git config --global --add safe.directory /var/www/devops
+            
+            echo "🔄 Menarik update dari branch main..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            echo "🧹 Menghentikan container lama..."
+            docker compose down
+            
+            echo "⚙️ Membangun dan menjalankan ulang container..."
+            docker compose up -d --build
+            
+            echo "⏳ Menunggu MySQL siap..."
+            docker exec laravel-app sh -c '
+              max_tries=30
+              counter=0
+              echo "Menunggu database siap..."
+              until php -r "
+                try {
+                  \$pdo = new PDO(
+                    \"mysql:host=db;port=3306;dbname=jemberwonder\",
+                    \"root\",
+                    \"root\"
+                  );
+                  echo \"Database connection successful\\n\";
+                  exit(0);
+                } catch (PDOException \$e) {
+                  echo \"Database connection failed: \" . \$e->getMessage() . \"\\n\";
+                  exit(1);
+                }
+              " || [ $counter -eq $max_tries ]; do
+                echo "Mencoba koneksi ke database... ($counter/$max_tries)"
+                sleep 2
+                counter=$((counter+1))
+              done
+              
+              if [ $counter -eq $max_tries ]; then
+                echo "❌ Timeout menunggu database setelah $((max_tries * 2)) detik"
+                exit 1
+              fi
+            '
+            
+            echo "📦 Menjalankan composer install..."
+            docker exec -u www-data laravel-app composer install --no-interaction --prefer-dist --optimize-autoloader
+            
+            echo "🔐 Generate APP key..."
+            docker exec -u www-data laravel-app php artisan key:generate --force
+            
+            echo "🧹 Membersihkan cache..."
+            docker exec -u www-data laravel-app php artisan config:clear
+            docker exec -u www-data laravel-app php artisan cache:clear
+            
+            echo "🗃️ Reset dan migrasi database..."
+            docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
+            
+            echo "✅ Deploy selesai!"
