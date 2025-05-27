@@ -16,10 +16,10 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             echo "📁 Masuk ke direktori proyek..."
-            cd /var/www/devops
+            cd /var/www/futsaldev
             
             echo "🔄 Mengkonfigurasi Git..."
-            git config --global --add safe.directory /var/www/devops
+            git config --global --add safe.directory /var/www/futsaldev
             
             echo "🔄 Menarik update dari branch main..."
             git fetch origin
