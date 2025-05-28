@@ -17,81 +17,68 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }} # SSH Private Key VPS dari GitHub Secrets
           script: |
             echo "📁 Masuk ke direktori proyek di host..."
-            # Masuk ke direktori proyek Laravel di VPS host
             cd /var/www/futsaldev
             
             echo "🔄 Konfigurasi Git safe.directory di host..."
-            # Menambahkan direktori proyek ke daftar aman Git untuk menghindari error ownership di host
             # Jika error "dubious ownership" masih muncul untuk /var/www, Anda mungkin perlu menambahkan ini:
             # git config --global --add safe.directory /var/www
             git config --global --add safe.directory /var/www/futsaldev
             
             echo "🔄 Update kode dari branch main di host..."
-            # Mengambil perubahan terbaru dari remote origin
             git fetch origin
-            # Mereset branch lokal ke kondisi terbaru dari branch main di remote
             git reset --hard origin/main
             
-            echo "🧹 Hentikan container lama..."
-            # Menghentikan dan menghapus container Docker yang sedang berjalan
+            echo "� Hentikan container lama..."
             docker compose down
             
             echo "⚙ Bangun dan jalankan container baru..."
-            # Membangun ulang image Docker (jika ada perubahan pada Dockerfile) dan menjalankan container
             docker compose up -d --build
             
             echo "⏳ Tunggu MySQL siap di dalam container..."
-            # Menunggu hingga container MySQL siap menerima koneksi
             docker exec laravel-app sh -c '
-              max_tries=30 # Jumlah percobaan maksimal
-              counter=0    # Penghitung percobaan
+              max_tries=30
+              counter=0
               until php -r "
                 try {
-                  # Mencoba koneksi PDO ke database MySQL
                   \$pdo = new PDO(
                     \"mysql:host=db;port=3306;dbname=futsal6\",
                     \"root\",
                     \"root\"
                   );
-                  exit(0); # Jika berhasil, keluar dengan kode 0
+                  exit(0);
                 } catch (PDOException \$e) {
-                  exit(1); # Jika gagal, keluar dengan kode 1
+                  exit(1);
                 }
               " || [ $counter -eq $max_tries ]; do
                 echo "Mencoba koneksi ke database... ($counter/$max_tries)"
-                sleep 2 # Tunggu 2 detik sebelum mencoba lagi
+                sleep 2
                 counter=$((counter+1))
               done
               if [ $counter -eq $max_tries ]; then
                 echo "❌ Timeout menunggu database"
-                exit 1 # Gagal jika timeout
+                exit 1
               fi
             '
             
             echo "⚙ Atur permission direktori aplikasi utama di dalam container..."
-            # Penting: Pastikan user www-data memiliki izin tulis ke direktori aplikasi utama di dalam container
+            # Pastikan user www-data memiliki izin tulis ke direktori aplikasi utama di dalam container
             # Diasumsikan direktori aplikasi Laravel di dalam container adalah /var/www
             docker exec laravel-app chmod -R 775 /var/www
             docker exec laravel-app chown -R www-data:www-data /var/www
             
             echo "⚙ Atur permission storage dan bootstrap/cache di dalam container..."
             # Mengatur kepemilikan dan izin direktori storage dan bootstrap/cache di dalam container
-            # Ini penting agar Laravel bisa menulis log, cache, dll.
-            # Path ini relatif terhadap WORKDIR container (misalnya /var/www jika itu root aplikasi)
             docker exec laravel-app chown -R www-data:www-data storage bootstrap/cache
             docker exec laravel-app chmod -R 775 storage bootstrap/cache
             
             echo "📦 Jalankan composer install di dalam container..."
             # Menjalankan composer install di dalam container sebagai user www-data
-            # Diasumsikan WORKDIR di Dockerfile adalah /var/www atau Anda perlu menambahkan -w /var/www
             docker exec -u www-data laravel-app composer install --no-interaction --prefer-dist --optimize-autoloader
             
             echo "🔐 Generate APP key di dalam container..."
-            # Menghasilkan kunci aplikasi Laravel di dalam container
             docker exec -u www-data laravel-app php artisan key:generate --force
             
             echo "🧹 Bersihkan cache aplikasi di dalam container..."
-            # Membersihkan cache konfigurasi dan aplikasi Laravel di dalam container
             docker exec -u www-data laravel-app php artisan config:clear
             docker exec -u www-data laravel-app php artisan cache:clear
             
@@ -105,14 +92,3 @@ jobs:
             # docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
             
             echo "✅ Deploy selesai!"
-```
-Perubahan utama yang saya lakukan adalah menambahkan langkah untuk mengatur izin pada direktori `/var/www` *di dalam container* sebelum menjalankan `composer install`. Ini harus memastikan bahwa user `www-data` memiliki izin yang diperlukan untuk membuat direktori `vendor`.
-
-```bash
-docker exec laravel-app chmod -R 775 /var/www
-docker exec laravel-app chown -R www-data:www-data /var/www
-```
-
-Ini akan memberikan izin tulis kepada `www-data` untuk seluruh direktori `/var/www` di dalam container, yang seharusnya memungkinkan Composer untuk membuat direktori `vendor` di sana.
-
-Silakan coba workflow yang diperbarui ini. Jika masalah masih berlanjut, kemungkinan besar ada konfigurasi yang lebih dalam di dalam `Dockerfile` atau `docker-compose.yml` Anda yang perlu disesuaikan, atau ada masalah dengan volume mount yang mencegah perubahan izin secara perman
