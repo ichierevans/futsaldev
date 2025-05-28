@@ -13,7 +13,7 @@ jobs:
         uses: appleboy/ssh-action@master # Menggunakan action SSH untuk koneksi ke VPS
         with:
           host: ${{ secrets.VPS_IP }} # IP VPS dari GitHub Secrets
-          username: ${{ secrets.VPS.USER }} # Username SSH VPS dari GitHub Secrets
+          username: ${{ secrets.VPS_USER }} # Username SSH VPS dari GitHub Secrets
           key: ${{ secrets.VPS_SSH_KEY }} # SSH Private Key VPS dari GitHub Secrets
           script: |
             echo "📁 Masuk ke direktori proyek di host..."
