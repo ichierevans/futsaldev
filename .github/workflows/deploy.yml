@@ -43,6 +43,7 @@ jobs:
                 try {
                   # Mencoba koneksi PDO ke database MySQL
                   # Pastikan host, port, dbname, user, dan password sesuai dengan konfigurasi Docker Compose Anda
+                  # Ini adalah pengecekan koneksi dari perspektif container laravel-app ke service 'db'
                   \$pdo = new PDO(
                     \"mysql:host=db;port=3306;dbname=futsal6\",
                     \"root\",
@@ -74,16 +75,27 @@ jobs:
             docker exec laravel-app chown -R www-data:www-data storage bootstrap/cache
             docker exec laravel-app chmod -R 775 storage bootstrap/cache
             
-            echo "📄 Buat file .env jika belum ada di dalam container..."
-            # Laravel memerlukan file .env. Jika tidak ada (karena .env biasanya di .gitignore),
-            # buat dari .env.example
+            echo "📄 Buat file .env jika belum ada dan pastikan konfigurasi DB benar di dalam container..."
             docker exec laravel-app sh -c '
+              # Buat .env dari .env.example jika belum ada
               if [ ! -f .env ]; then
                 cp .env.example .env
                 echo ".env created from .env.example"
               else
                 echo ".env already exists"
               fi
+              
+              # Pastikan file .env memiliki izin yang benar agar dapat ditulis oleh www-data
+              chmod 664 .env
+              chown www-data:www-data .env
+
+              # Pastikan variabel koneksi database di .env sesuai dengan setup Docker Compose
+              # Menggunakan sed untuk update atau append jika variabel tidak ada
+              sed -i "/^DB_HOST=/c\DB_HOST=db" .env || echo "DB_HOST=db" >> .env
+              sed -i "/^DB_PORT=/c\DB_PORT=3306" .env || echo "DB_PORT=3306" >> .env
+              sed -i "/^DB_DATABASE=/c\DB_DATABASE=futsal6" .env || echo "DB_DATABASE=futsal6" >> .env
+              sed -i "/^DB_USERNAME=/c\DB_USERNAME=root" .env || echo "DB_USERNAME=root" >> .env
+              sed -i "/^DB_PASSWORD=/c\DB_PASSWORD=root" .env || echo "DB_PASSWORD=root" >> .env
             '
             
             echo "📦 Jalankan composer install di dalam container..."
