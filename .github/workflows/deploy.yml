@@ -28,18 +28,21 @@ jobs:
             git fetch origin
             git reset --hard origin/main
             
-            echo "� Hentikan container lama..."
+            echo "🧹 Hentikan container lama..."
             docker compose down
             
             echo "⚙ Bangun dan jalankan container baru..."
             docker compose up -d --build
             
             echo "⏳ Tunggu MySQL siap di dalam container..."
+            # Menunggu hingga container MySQL siap menerima koneksi
             docker exec laravel-app sh -c '
               max_tries=30
               counter=0
               until php -r "
                 try {
+                  # Mencoba koneksi PDO ke database MySQL
+                  # Pastikan host, port, dbname, user, dan password sesuai dengan konfigurasi Docker Compose Anda
                   \$pdo = new PDO(
                     \"mysql:host=db;port=3306;dbname=futsal6\",
                     \"root\",
@@ -71,8 +74,19 @@ jobs:
             docker exec laravel-app chown -R www-data:www-data storage bootstrap/cache
             docker exec laravel-app chmod -R 775 storage bootstrap/cache
             
+            echo "📄 Buat file .env jika belum ada di dalam container..."
+            # Laravel memerlukan file .env. Jika tidak ada (karena .env biasanya di .gitignore),
+            # buat dari .env.example
+            docker exec laravel-app sh -c '
+              if [ ! -f .env ]; then
+                cp .env.example .env
+                echo ".env created from .env.example"
+              else
+                echo ".env already exists"
+              fi
+            '
+            
             echo "📦 Jalankan composer install di dalam container..."
-            # Menjalankan composer install di dalam container sebagai user www-data
             docker exec -u www-data laravel-app composer install --no-interaction --prefer-dist --optimize-autoloader
             
             echo "🔐 Generate APP key di dalam container..."
