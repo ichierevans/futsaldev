@@ -13,7 +13,7 @@ jobs:
         uses: appleboy/ssh-action@master # Menggunakan action SSH untuk koneksi ke VPS
         with:
           host: ${{ secrets.VPS_IP }} # IP VPS dari GitHub Secrets
-          username: ${{ secrets.VPS_USER }} # Username SSH VPS dari GitHub Secrets
+          username: ${{ secrets.VPS.USER }} # Username SSH VPS dari GitHub Secrets
           key: ${{ secrets.VPS_SSH_KEY }} # SSH Private Key VPS dari GitHub Secrets
           script: |
             echo "📁 Masuk ke direktori proyek di host..."
@@ -109,12 +109,10 @@ jobs:
             docker exec -u www-data laravel-app php artisan cache:clear
             
             echo "🗃 Migrasi dan seed database di dalam container..."
-            # Menjalankan migrasi database di dalam container
             # PENTING: migrate:fresh akan MENGHAPUS SEMUA DATA di database Anda.
-            # Untuk produksi, biasanya Anda hanya ingin 'php artisan migrate --force'
-            # yang hanya menjalankan migrasi yang belum dijalankan.
-            docker exec -u www-data laravel-app php artisan migrate --force --seed
-            # Jika Anda memang ingin menghapus semua data dan me-reset database setiap kali deploy:
-            # docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
+            # Ini digunakan untuk memastikan skema database bersih dan konsisten dengan migrasi.
+            # Untuk produksi dengan data penting, Anda biasanya hanya ingin 'php artisan migrate --force'
+            # yang hanya menjalankan migrasi yang belum dijalankan tanpa menghapus data.
+            docker exec -u www-data laravel-app php artisan migrate:fresh --force --seed
             
             echo "✅ Deploy selesai!"
