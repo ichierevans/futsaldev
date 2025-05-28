@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->timestamp('full_payment_date')->nullable()->after('dp_payment_date');
-            $table->string('full_payment_method')->nullable()->after('full_payment_date');
+            $table->timestamp('full_payment_date')->nullable();
+            $table->string('full_payment_method')->nullable();
         });
     }
 
